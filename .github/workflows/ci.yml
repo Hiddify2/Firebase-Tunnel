@@ -30,7 +30,6 @@ jobs:
         uses: golangci/golangci-lint-action@v6
         with:
           version: v1.59
-          working-directory: fb-tunnel-go
 
   # ─────────────────────────────────────────────────────────────────────────────
   # Test (matrix over OS and Go version)
@@ -55,23 +54,18 @@ jobs:
           cache: true
 
       - name: Download dependencies
-        working-directory: fb-tunnel-go
         run: go mod download
 
       - name: Verify module graph
-        working-directory: fb-tunnel-go
         run: go mod verify
 
       - name: Build all packages
-        working-directory: fb-tunnel-go
         run: go build ./...
 
       - name: Run tests (with race detector)
-        working-directory: fb-tunnel-go
         run: go test -race -v -count=1 -timeout=120s ./...
 
       - name: Run tests (with coverage)
-        working-directory: fb-tunnel-go
         run: go test -coverprofile=coverage.out -covermode=atomic ./...
 
       - name: Upload coverage
@@ -79,7 +73,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: coverage-report
-          path: fb-tunnel-go/coverage.out
+          path: coverage.out
           retention-days: 7
 
   # ─────────────────────────────────────────────────────────────────────────────
@@ -100,7 +94,6 @@ jobs:
           cache: true
 
       - name: Run benchmarks
-        working-directory: fb-tunnel-go
         run: go test -bench=. -benchmem -run='^$' ./...
 
   # ─────────────────────────────────────────────────────────────────────────────
@@ -135,7 +128,6 @@ jobs:
           cache: true
 
       - name: Build client binary
-        working-directory: fb-tunnel-go
         env:
           GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.goarch }}
@@ -148,7 +140,6 @@ jobs:
             ./client
 
       - name: Build server binary
-        working-directory: fb-tunnel-go
         env:
           GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.goarch }}
@@ -164,5 +155,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: binaries-${{ matrix.goos }}-${{ matrix.goarch }}
-          path: fb-tunnel-go/dist/
+          path: dist/
           retention-days: 7

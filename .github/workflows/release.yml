@@ -22,7 +22,6 @@ jobs:
           go-version: "1.22"
           cache: true
       - name: Run tests
-        working-directory: fb-tunnel-go
         run: go test -race -count=1 ./...
 
   # ─────────────────────────────────────────────────────────────────────────────
@@ -43,7 +42,6 @@ jobs:
           cache: true
 
       - name: Build release binaries
-        working-directory: fb-tunnel-go
         env:
           CGO_ENABLED: "0"
         run: |
@@ -72,13 +70,13 @@ jobs:
           done
 
       - name: Create checksums
-        working-directory: fb-tunnel-go/dist
+        working-directory: dist
         run: sha256sum * > SHA256SUMS.txt
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: fb-tunnel-go/dist/*
+          files: dist/*
           generate_release_notes: true
           draft: false
           prerelease: ${{ contains(github.ref_name, '-') }}
