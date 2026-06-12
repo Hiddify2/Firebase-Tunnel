@@ -1,0 +1,23 @@
+# Compiled binaries
+fb-tunnel-client
+fb-tunnel-client.exe
+fb-tunnel-server
+fb-tunnel-server.exe
+dist/
+
+# Coverage reports
+coverage.out
+coverage.html
+
+# Editor directories
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Secrets – never commit real credentials
+# (The *.toml sample files contain placeholders only)

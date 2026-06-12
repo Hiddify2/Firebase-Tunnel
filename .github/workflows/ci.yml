@@ -1,0 +1,168 @@
+name: CI
+
+on:
+  push:
+    branches: ["main", "master"]
+  pull_request:
+    branches: ["main", "master"]
+
+permissions:
+  contents: read
+
+jobs:
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Lint
+  # ─────────────────────────────────────────────────────────────────────────────
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+          cache: true
+
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: v1.59
+          working-directory: fb-tunnel-go
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Test (matrix over OS and Go version)
+  # ─────────────────────────────────────────────────────────────────────────────
+  test:
+    name: Test (${{ matrix.os }}, Go ${{ matrix.go-version }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        go-version: ["1.22", "1.23"]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go ${{ matrix.go-version }}
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ matrix.go-version }}
+          cache: true
+
+      - name: Download dependencies
+        working-directory: fb-tunnel-go
+        run: go mod download
+
+      - name: Verify module graph
+        working-directory: fb-tunnel-go
+        run: go mod verify
+
+      - name: Build all packages
+        working-directory: fb-tunnel-go
+        run: go build ./...
+
+      - name: Run tests (with race detector)
+        working-directory: fb-tunnel-go
+        run: go test -race -v -count=1 -timeout=120s ./...
+
+      - name: Run tests (with coverage)
+        working-directory: fb-tunnel-go
+        run: go test -coverprofile=coverage.out -covermode=atomic ./...
+
+      - name: Upload coverage
+        if: matrix.os == 'ubuntu-latest' && matrix.go-version == '1.22'
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: fb-tunnel-go/coverage.out
+          retention-days: 7
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Benchmarks (non-blocking – informational only)
+  # ─────────────────────────────────────────────────────────────────────────────
+  bench:
+    name: Benchmarks
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+          cache: true
+
+      - name: Run benchmarks
+        working-directory: fb-tunnel-go
+        run: go test -bench=. -benchmem -run='^$' ./...
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Build release binaries (client + server)
+  # ─────────────────────────────────────────────────────────────────────────────
+  build-binaries:
+    name: Build Binaries (${{ matrix.goos }}-${{ matrix.goarch }})
+    runs-on: ubuntu-latest
+    needs: test
+    strategy:
+      matrix:
+        include:
+          - goos: linux
+            goarch: amd64
+          - goos: linux
+            goarch: arm64
+          - goos: windows
+            goarch: amd64
+          - goos: darwin
+            goarch: amd64
+          - goos: darwin
+            goarch: arm64
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+          cache: true
+
+      - name: Build client binary
+        working-directory: fb-tunnel-go
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          CGO_ENABLED: "0"
+        run: |
+          suffix=""
+          if [ "$GOOS" = "windows" ]; then suffix=".exe"; fi
+          go build -ldflags="-s -w" \
+            -o "dist/fb-tunnel-client-${{ matrix.goos }}-${{ matrix.goarch }}${suffix}" \
+            ./client
+
+      - name: Build server binary
+        working-directory: fb-tunnel-go
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          CGO_ENABLED: "0"
+        run: |
+          suffix=""
+          if [ "$GOOS" = "windows" ]; then suffix=".exe"; fi
+          go build -ldflags="-s -w" \
+            -o "dist/fb-tunnel-server-${{ matrix.goos }}-${{ matrix.goarch }}${suffix}" \
+            ./server
+
+      - name: Upload binaries
+        uses: actions/upload-artifact@v4
+        with:
+          name: binaries-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: fb-tunnel-go/dist/
+          retention-days: 7

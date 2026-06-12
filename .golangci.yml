@@ -1,0 +1,57 @@
+run:
+  timeout: 5m
+  tests: true
+  modules-download-mode: readonly
+
+linters:
+  enable:
+    - errcheck        # Check for unchecked errors
+    - gosimple        # Simplifications
+    - govet           # Report suspicious constructs
+    - ineffassign     # Detect ineffectual assignments
+    - staticcheck     # Static analysis checks
+    - unused          # Detect unused code
+    - gofmt           # Check code formatting
+    - goimports       # Check imports ordering
+    - misspell        # Correct commonly misspelled words
+    - gosec           # Security checks
+    - contextcheck    # Check context usage
+    - noctx           # HTTP requests without context
+    - bodyclose       # HTTP response body close checks
+    - exhaustive      # Exhaustive switch statements
+    - godot           # Check comment periods
+    - revive          # Fast, configurable linter
+    - wrapcheck       # Wrap errors from external packages
+
+linters-settings:
+  revive:
+    rules:
+      - name: exported
+        severity: warning
+      - name: unexported-return
+        severity: warning
+      - name: var-naming
+        severity: warning
+  govet:
+    enable:
+      - shadow
+  gosec:
+    excludes:
+      - G402  # TLS InsecureSkipVerify – not relevant here
+  godot:
+    scope: declarations
+    capital: true
+
+issues:
+  exclude-rules:
+    # Allow t.Fatalf in tests without checking return values.
+    - path: "_test\\.go"
+      linters:
+        - wrapcheck
+        - exhaustive
+    # Allow unused exported identifiers in the root doc file.
+    - path: "fbtunnel\\.go"
+      linters:
+        - unused
+  max-issues-per-linter: 0
+  max-same-issues: 0

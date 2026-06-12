@@ -1,0 +1,42 @@
+# fb-tunnel-go client configuration
+#
+# Copy this file, fill in your Firebase credentials, and pass its path as the
+# first argument to fb-tunnel-client:
+#
+#   ./fb-tunnel-client client.toml
+
+# ── Firebase ──────────────────────────────────────────────────────────────────
+
+# Full URL of your Firebase Realtime Database project.
+# Find this in: Firebase console → Realtime Database → Data tab (top of page).
+# Must NOT end with a trailing slash.
+firebase_url = "https://YOUR-PROJECT-default-rtdb.firebaseio.com"
+
+# Firebase Database Secret (legacy auth).
+# Find this in: Firebase console → Project settings → Service accounts →
+#               Database secrets → Show.
+firebase_secret = "YOUR_DATABASE_SECRET_HERE"
+
+# ── SOCKS5 listener ───────────────────────────────────────────────────────────
+
+# Local address and port to listen for SOCKS5 connections.
+# Configure your application (browser, curl, etc.) to use this as its SOCKS5 proxy.
+listen = "127.0.0.1:1080"
+
+# ── Batching ──────────────────────────────────────────────────────────────────
+
+# How many milliseconds to accumulate outgoing TCP data before flushing a batch.
+# Lower = lower latency, more Firebase writes.
+# Higher = better compression, fewer Firebase writes.
+# Default: 50
+batch_interval_ms = 50
+
+# Maximum size (bytes) of a batch before it is flushed early.
+# Default: 32768 (32 KiB)
+batch_max_bytes = 32768
+
+# ── Reliability ───────────────────────────────────────────────────────────────
+
+# Number of times to retry a failed Firebase write before giving up.
+# Default: 5
+retry_limit = 5

@@ -1,0 +1,36 @@
+# fb-tunnel-go server configuration
+#
+# Copy this file, fill in your Firebase credentials, and pass its path as the
+# first argument to fb-tunnel-server:
+#
+#   ./fb-tunnel-server server.toml
+
+# ── Firebase ──────────────────────────────────────────────────────────────────
+
+# Full URL of your Firebase Realtime Database project.
+# Must be the same project configured in client.toml.
+firebase_url = "https://YOUR-PROJECT-default-rtdb.firebaseio.com"
+
+# Firebase Database Secret (must match client.toml).
+firebase_secret = "YOUR_DATABASE_SECRET_HERE"
+
+# ── Polling ───────────────────────────────────────────────────────────────────
+
+# How often (milliseconds) the server checks Firebase for new sessions.
+# Lower values mean new sessions are picked up faster at the cost of more
+# REST calls.
+# Default: 200
+poll_interval_ms = 200
+
+# ── Session lifecycle ─────────────────────────────────────────────────────────
+
+# Seconds of inactivity (no new c2s data) before a session is automatically
+# terminated. Prevents leaked sessions if the client crashes without cleaning up.
+# Default: 300
+session_timeout_s = 300
+
+# ── Reliability ───────────────────────────────────────────────────────────────
+
+# Number of times to retry a failed Firebase write before giving up.
+# Default: 5
+retry_limit = 5

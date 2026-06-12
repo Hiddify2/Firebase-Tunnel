@@ -1,0 +1,86 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: write
+
+jobs:
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Run tests before releasing
+  # ─────────────────────────────────────────────────────────────────────────────
+  test:
+    name: Test before release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+          cache: true
+      - name: Run tests
+        working-directory: fb-tunnel-go
+        run: go test -race -count=1 ./...
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Build and release
+  # ─────────────────────────────────────────────────────────────────────────────
+  release:
+    name: Build & Release
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+          cache: true
+
+      - name: Build release binaries
+        working-directory: fb-tunnel-go
+        env:
+          CGO_ENABLED: "0"
+        run: |
+          mkdir -p dist
+          for target in \
+            "linux/amd64" \
+            "linux/arm64" \
+            "linux/386" \
+            "windows/amd64" \
+            "windows/arm64" \
+            "darwin/amd64" \
+            "darwin/arm64"; do
+            GOOS=$(echo $target | cut -d/ -f1)
+            GOARCH=$(echo $target | cut -d/ -f2)
+            suffix=""
+            if [ "$GOOS" = "windows" ]; then suffix=".exe"; fi
+            echo "Building $GOOS/$GOARCH..."
+            GOOS=$GOOS GOARCH=$GOARCH go build \
+              -ldflags="-s -w -X main.Version=${{ github.ref_name }}" \
+              -o "dist/fb-tunnel-client-${GOOS}-${GOARCH}${suffix}" \
+              ./client
+            GOOS=$GOOS GOARCH=$GOARCH go build \
+              -ldflags="-s -w -X main.Version=${{ github.ref_name }}" \
+              -o "dist/fb-tunnel-server-${GOOS}-${GOARCH}${suffix}" \
+              ./server
+          done
+
+      - name: Create checksums
+        working-directory: fb-tunnel-go/dist
+        run: sha256sum * > SHA256SUMS.txt
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: fb-tunnel-go/dist/*
+          generate_release_notes: true
+          draft: false
+          prerelease: ${{ contains(github.ref_name, '-') }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
