@@ -393,4 +393,8 @@ go tool cover -html=coverage.out -o coverage.html
   for any real-world adaptation.
 - **No TLS between client and Firebase**: Firebase REST API uses HTTPS but data
   contents are visible to anyone with the Database Secret.
+
+## Acknowledgements
+
+The idea behind this project was inspired by [LlamaStudioDev](https://github.com/LlamaStudioDev). Credit goes to them for the original concept and inspiration.
 - **CONNECT only**: UDP associate and BIND SOCKS5 commands are not supported.
